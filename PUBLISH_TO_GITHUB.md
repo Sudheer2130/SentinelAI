@@ -7,7 +7,7 @@ Follow these simple steps to publish your new project to your GitHub profile and
 ### Step 1: Initialize Git Repository
 Open PowerShell or your terminal inside the `SentinelAI` directory:
 ```bash
-cd "c:\Users\gumma\OneDrive\ドキュメント\Insta agent\SentinelAI"
+cd "c:\Users\gumma\OneDrive\ドキュメント\SentinelAI"
 git init
 git add .
 git commit -m "feat: Initial commit of SentinelAI Autonomous SOC Analyst Platform"
