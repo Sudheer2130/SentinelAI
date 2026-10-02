@@ -51,4 +51,4 @@ Once pushed, click the ⚙️ icon next to "About" on your repository page and a
 ---
 
 ### Step 5: Put It On Your Resume & LinkedIn!
-Add the bullet points from the bottom of [`README.md`](file:///c:/Users/gumma/OneDrive/%E3%83%89%E3%82%AD%E3%83%A5%E3%83%A1%E3%83%B3%E3%83%88/Insta%20agent/SentinelAI/README.md) directly to your resume under **Projects** or **Technical Experience**.
+Add the bullet points from the bottom of [`README.md`](README.md) directly to your resume under **Projects** or **Technical Experience**.
