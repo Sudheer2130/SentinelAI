@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentinelAI | Autonomous SOC Analyst & Threat Hunter</title>
+    <meta name="description" content="Production-ready Autonomous AI SOC Analyst for real-time SIEM log correlation, MITRE ATT&CK mapping, threat intelligence enrichment, and autonomous incident containment.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Tactical Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Tactical Top Navbar -->
+    <header class="navbar">
+        <div class="nav-brand">
+            <div class="radar-icon">
+                <div class="radar-sweep"></div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <div>
+                <span class="brand-title">SentinelAI</span>
+                <span class="brand-badge">SOC Copilot v1.0</span>
+            </div>
+        </div>
+
+        <div class="nav-status">
+            <div class="status-indicator">
+                <div class="led-pulse"></div>
+                <span>STATUS: <strong style="color: var(--accent-green);">ARMED & MONITORING</strong></span>
+            </div>
+            <div class="status-indicator">
+                <span id="engineStatusText" style="color: var(--accent-cyan);">ENGINE: HYBRID (FREE / OFFLINE ACTIVE)</span>
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <button class="btn btn-outline btn-sm" onclick="openIngestModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Ingest Custom Log
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="exportReport()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export Audit Report
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Metrics HUD -->
+        <section class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span>Total Alerts Ingested</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div class="metric-value" id="metricTotalAlerts">0</div>
+                <div class="metric-footer">Across Sysmon & Suricata telemetry</div>
+            </div>
+
+            <div class="metric-card critical">
+                <div class="metric-header">
+                    <span>Critical Incidents</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 2 22 22 22 12 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="metric-value" id="metricCritical">0</div>
+                <div class="metric-footer">Immediate containment required</div>
+            </div>
+
+            <div class="metric-card success">
+                <div class="metric-header">
+                    <span>False Positive Suppression</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="metric-value" id="metricFpRate">0%</div>
+                <div class="metric-footer">Automated noise reduction rate</div>
+            </div>
+
+            <div class="metric-card purple">
+                <div class="metric-header">
+                    <span>Analyst MTTR Accelerated</span>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="metric-value" id="metricHoursSaved">0h</div>
+                <div class="metric-footer">Estimated Tier-1 investigation time saved</div>
+            </div>
+        </section>
+
+        <!-- Main Operational Split View -->
+        <div class="soc-grid">
+            
+            <!-- Left Column: Alerts Feed & Scenarios -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        Security Alert Telemetry
+                    </span>
+                    <span style="font-size: 0.72rem; color: var(--accent-cyan); font-family: var(--font-mono);">LIVE FEED</span>
+                </div>
+
+                <!-- One-Click Preset Scenarios -->
+                <div class="scenario-bar">
+                    <div class="scenario-title">1-Click Attack Scenarios (Demo Suite)</div>
+                    <div class="scenario-chips">
+                        <button class="scenario-btn" onclick="runScenario('scenario-cobalt-strike')">
+                            <span>🎯</span> Cobalt Strike C2
+                        </button>
+                        <button class="scenario-btn" onclick="runScenario('scenario-lockbit-ransomware')">
+                            <span>💀</span> LockBit Ransomware
+                        </button>
+                        <button class="scenario-btn" onclick="runScenario('scenario-portscan-bruteforce')">
+                            <span>📡</span> Suricata Port Scan
+                        </button>
+                        <button class="scenario-btn" onclick="runScenario('scenario-false-positive-sccm')">
+                            <span>✅</span> SCCM (False Pos)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feed Filter Tabs -->
+                <div class="feed-filter-bar">
+                    <button class="filter-tab active" data-filter="all">All Alerts</button>
+                    <button class="filter-tab" data-filter="critical">Critical</button>
+                    <button class="filter-tab" data-filter="high">High</button>
+                    <button class="filter-tab" data-filter="fp">False Positives</button>
+                </div>
+
+                <!-- Alerts List Container -->
+                <div class="alerts-list" id="alertsListContainer">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Right Column: Deep-Dive Investigation Console -->
+            <div class="console-panel">
+                <div class="console-header">
+                    <div class="incident-title-block">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                            <span class="badge" id="activeSeverityBadge">CRITICAL</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);" id="activeIncidentId">INC-00001</span>
+                        </div>
+                        <h2 id="activeIncidentTitle">Select an alert to begin deep-dive analysis</h2>
+                        <div class="incident-meta-strip">
+                            <span>Target Asset: <strong id="activeIncidentHost" style="color: #ffffff;">WIN-ENDPOINT</strong></span>
+                            <span>&bull;</span>
+                            <span>Time: <span id="activeIncidentTime" style="font-family: var(--font-mono);">--:--:--</span></span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">STATUS:</label>
+                        <select id="incidentStatusSelect" onchange="onStatusChange(this.value)" style="background: var(--bg-elevated); color: var(--accent-cyan); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.35rem 0.6rem; font-size: 0.78rem; font-weight: 700; outline: none;">
+                            <option value="NEW">NEW</option>
+                            <option value="TRIAGED">TRIAGED</option>
+                            <option value="INVESTIGATING">INVESTIGATING</option>
+                            <option value="CONTAINED">CONTAINED</option>
+                            <option value="RESOLVED">RESOLVED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Console Navigation Tabs -->
+                <div class="console-tabs">
+                    <button class="console-tab-btn active" data-tab="tabTriage">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        AI Triage & Timeline
+                    </button>
+                    <button class="console-tab-btn" data-tab="tabIntel">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                        Threat Intel & MITRE
+                    </button>
+                    <button class="console-tab-btn" data-tab="tabPlaybooks">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Defensive Playbooks & Rules
+                    </button>
+                    <button class="console-tab-btn" data-tab="tabCopilot">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        SOC AI Copilot
+                    </button>
+                </div>
+
+                <!-- Tab 1: AI Triage & Analysis -->
+                <div class="tab-pane active" id="tabTriage">
+                    <!-- Hero Verdict Banner -->
+                    <div class="verdict-hero">
+                        <div class="verdict-main">
+                            <span class="verdict-label">AI Incident Verdict</span>
+                            <div class="verdict-score-wrapper">
+                                <span class="badge badge-true-positive" id="activeVerdictBadge">TRUE POSITIVE</span>
+                                <div class="confidence-bar-bg">
+                                    <div class="confidence-bar-fill" id="confidenceBarFill" style="width: 95%;"></div>
+                                </div>
+                                <span style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);" id="confidenceScoreText">95% Confidence</span>
+                            </div>
+                        </div>
+
+                        <div class="verdict-side-stats">
+                            <div class="verdict-stat">
+                                <span class="verdict-stat-label">Kill-Chain Phase</span>
+                                <span class="verdict-stat-val" id="heroKillchainPhase" style="color: var(--accent-orange);">Command and Control</span>
+                            </div>
+                            <div class="verdict-stat">
+                                <span class="verdict-stat-label">Reasoning Engine</span>
+                                <span class="verdict-stat-val" id="heroAiProvider" style="color: var(--accent-cyan); font-size: 0.8rem;">SentinelAI Core</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Executive Summary -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            Executive Incident Summary (CISO Brief)
+                        </div>
+                        <div class="summary-box" id="executiveSummaryContent">
+                            Loading autonomous triage analysis...
+                        </div>
+                    </div>
+
+                    <!-- Root Cause & Blast Radius -->
+                    <div class="section-block analysis-two-col">
+                        <div class="detail-card">
+                            <div class="detail-card-title">Technical Root Cause Analysis</div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;" id="rootCauseContent">--</p>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-card-title">Estimated Blast Radius & Asset Exposure</div>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;" id="blastRadiusContent">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Attack Progression Timeline -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                            Correlated Attack Timeline
+                        </div>
+                        <div class="timeline-list" id="timelineContainer">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Threat Intel & MITRE ATT&CK -->
+                <div class="tab-pane" id="tabIntel">
+                    <!-- Extracted IOCs -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 19 21 12 17 5 21 12 2"></polygon></svg>
+                            Indicators of Compromise (Enriched via AbuseIPDB & VirusTotal)
+                        </div>
+                        <div style="overflow-x: auto; background: rgba(13, 18, 29, 0.6); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Indicator Value</th>
+                                        <th>Reputation</th>
+                                        <th>Threat Status</th>
+                                        <th>Tags & Intelligence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="iocsTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MITRE ATT&CK Mapping -->
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                            MITRE ATT&CK Framework Mapping (v14)
+                        </div>
+                        <div style="overflow-x: auto; background: rgba(13, 18, 29, 0.6); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tactic</th>
+                                        <th>Technique ID</th>
+                                        <th>Technique Name & Context</th>
+                                        <th>Detection Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mitreTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Containment Playbooks & Detection Engineering -->
+                <div class="tab-pane" id="tabPlaybooks">
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                            Active Containment Playbook Actions
+                        </div>
+                        <div id="playbookActionsContainer">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            Synthesized Sigma Detection Rule (YAML)
+                        </div>
+                        <div class="code-container">
+                            <div class="code-header">
+                                <span>sigma_rule.yml</span>
+                                <button class="btn btn-outline btn-sm" onclick="copyText(document.getElementById('sigmaRuleContent').innerText)">Copy Sigma Rule</button>
+                            </div>
+                            <div class="code-body" id="sigmaRuleContent"></div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                            YARA Memory & File Hunting Signature
+                        </div>
+                        <div class="code-container">
+                            <div class="code-header">
+                                <span>detection_rule.yar</span>
+                                <button class="btn btn-outline btn-sm" onclick="copyText(document.getElementById('yaraRuleContent').innerText)">Copy YARA Rule</button>
+                            </div>
+                            <div class="code-body" id="yaraRuleContent"></div>
+                        </div>
+                    </div>
+
+                    <div class="section-block">
+                        <div class="section-title">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            Perimeter Firewall & Host Isolation Script
+                        </div>
+                        <div class="code-container">
+                            <div class="code-header">
+                                <span>firewall_containment.ps1</span>
+                                <button class="btn btn-outline btn-sm" onclick="copyText(document.getElementById('firewallScriptContent').innerText)">Copy Script</button>
+                            </div>
+                            <div class="code-body" id="firewallScriptContent"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: SOC AI Copilot (Live Interactive Chat) -->
+                <div class="tab-pane" id="tabCopilot">
+                    <div class="chat-window">
+                        <div class="chat-messages" id="chatMessagesBox">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <!-- Prompt Suggestion Chips -->
+                        <div class="chat-chips">
+                            <button class="chip-btn" onclick="sendPresetQuestion('Should we immediately isolate this endpoint?')">Isolate Host?</button>
+                            <button class="chip-btn" onclick="sendPresetQuestion('Analyze the process lineage and command line execution.')">Process Lineage</button>
+                            <button class="chip-btn" onclick="sendPresetQuestion('What network IP addresses should be blocked on our firewall?')">Firewall Block IPs</button>
+                            <button class="chip-btn" onclick="sendPresetQuestion('Can you generate an alert query for Splunk or KQL for this incident?')">Splunk/KQL Query</button>
+                        </div>
+
+                        <form class="chat-input-bar" id="chatForm">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="Ask SentinelAI Copilot about this incident..." autocomplete="off">
+                            <button type="submit" class="btn btn-primary btn-sm">Send</button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Log Ingestion Modal -->
+    <div class="modal-overlay" id="ingestModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="panel-title">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Ingest & Investigate Security Log
+                </span>
+                <button class="btn btn-outline btn-sm" onclick="closeIngestModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    Paste raw Windows Sysmon (JSON), Suricata EVE (JSON), or standard syslog string below. SentinelAI will normalize, enrich IOCs, map MITRE TTPs, and execute autonomous triage.
+                </p>
+                <textarea class="textarea-cyber" id="customLogTextarea" placeholder='{
+  "log_source": "WINDOWS_SYSMON",
+  "EventID": 1,
+  "CommandLine": "powershell.exe -enc JABzAD0...",
+  "Image": "C:\\Windows\\System32\\powershell.exe",
+  "Computer": "WORKSTATION-01",
+  "User": "CORP\\analyst"
+}'></textarea>
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+                    <button class="btn btn-outline btn-sm" onclick="closeIngestModal()">Cancel</button>
+                    <button class="btn btn-primary btn-sm" onclick="submitCustomLog()">Start AI Triage</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

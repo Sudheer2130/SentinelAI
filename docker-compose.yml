@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  sentinel-soc:
+    build: .
+    container_name: sentinel_ai_soc
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LLM_PROVIDER=auto
+    env_file:
+      - .env
+    restart: unless-stopped
