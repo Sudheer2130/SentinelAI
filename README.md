@@ -130,10 +130,54 @@ docker-compose logs -f
 
 ---
 
+## ⚡ Deploy to Vercel (1-Click Serverless Cloud)
+
+SentinelAI is pre-configured for high-performance serverless deployment on **Vercel** with:
+- **Zero-Latency Static Assets**: The tactical cyber UI is distributed through Vercel's global Edge CDN via `public/`.
+- **Serverless ASGI Backend**: The FastAPI intelligence core and correlation pipeline execute on-demand via `api/index.py`.
+- **On-Demand Incident Seeding**: Baseline demonstration incidents load automatically even across serverless cold starts.
+
+### Method A: Deploy via GitHub (Recommended)
+1. Push your repository to GitHub:
+   ```bash
+   git add .
+   git commit -m "Configure SentinelAI for Vercel deployment"
+   git push origin main
+   ```
+2. Go to **[vercel.com/new](https://vercel.com/new)** and import your GitHub repository.
+3. In **Project Settings**:
+   - Framework Preset: **Other** (Vercel automatically detects `vercel.json` and Python requirements).
+   - Root Directory: `./` (leave default).
+4. *(Optional)* Add Environment Variables in the Vercel Dashboard (**Settings** ➔ **Environment Variables**):
+   - `GEMINI_API_KEY` (Free Google Gemini 2.0 Flash)
+   - `GROQ_API_KEY` (Free Groq LLaMA-3.3-70b)
+   - `ABUSEIPDB_API_KEY` (AbuseIPDB reputation)
+   - `VIRUSTOTAL_API_KEY` (VirusTotal v3)
+   *(Note: If no keys are added, SentinelAI automatically runs with its built-in offline intelligence engine and heuristic SOC analyzer!)*
+5. Click **Deploy**! Your production SOC platform will be live at `https://<your-project>.vercel.app`.
+
+### Method B: Deploy via Vercel CLI
+```bash
+# Deploy using npx (no global install required)
+npx vercel
+
+# Deploy directly to production
+npx vercel --prod
+```
+
+---
+
 ## 📁 Repository Structure
 
 ```
 SentinelAI/
+├── api/
+│   └── index.py                 # Vercel Serverless Function entrypoint (ASGI bridge)
+├── public/                      # Edge CDN static distribution for Vercel
+│   ├── index.html               # Main Command Center UI (served at /)
+│   └── static/                  # CDN-hosted CSS & JS assets
+├── vercel.json                  # Vercel Serverless routing & execution configuration
+├── .vercelignore                # Optimized Vercel build exclusions
 ├── app/
 │   ├── main.py                  # FastAPI server, endpoints, and background lifecycle
 │   ├── config.py                # Environment configuration and API keys
@@ -157,8 +201,8 @@ SentinelAI/
 │       ├── css/style.css        # Tactical Cyber Dark Command Center CSS
 │       ├── js/app.js            # Dynamic dashboard interactions, filters, and chat
 │       └── index.html           # Command Center single-page application
-├── run.py                       # 1-click startup launcher
-├── requirements.txt             # Clean Python dependencies
+├── run.py                       # 1-click local startup launcher
+├── requirements.txt             # Python dependencies (including pydantic-settings)
 ├── Dockerfile                   # Production container definition
 ├── docker-compose.yml           # Multi-container orchestration
 └── README.md                    # Project documentation

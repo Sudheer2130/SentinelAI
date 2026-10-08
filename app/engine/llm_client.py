@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import httpx
@@ -140,6 +141,10 @@ class LLMClient:
         ttps: List[MitreTTP],
         timeline: List[TimelineEvent]
     ) -> Optional[Dict[str, Any]]:
+        # In cloud serverless (Vercel) or when Ollama points to localhost without an active daemon, skip
+        if ("localhost" in self.ollama_url or "127.0.0.1" in self.ollama_url) and os.getenv("VERCEL"):
+            return None
+
         prompt = self._build_investigation_prompt(alert, iocs, ttps, timeline)
         url = f"{self.ollama_url}/api/generate"
         payload = {
@@ -148,11 +153,14 @@ class LLMClient:
             "format": "json",
             "stream": False
         }
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, json=payload)
-            if resp.status_code == 200:
-                content = resp.json().get("response")
-                return json.loads(content)
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=0.5)) as client:
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    content = resp.json().get("response")
+                    return json.loads(content)
+        except Exception:
+            pass
         return None
 
     def _build_investigation_prompt(

@@ -51,14 +51,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static folder
+# Ensure static folder is properly located across both local and Vercel environments
 static_dir = os.path.join(os.path.dirname(__file__), "static")
+if not os.path.exists(static_dir):
+    alt_static = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "static")
+    if os.path.exists(alt_static):
+        static_dir = alt_static
+
 if os.path.exists(static_dir):
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+async def ensure_seeded():
+    """Ensures baseline scenarios are loaded even if ASGI lifespan was not invoked (e.g. serverless cold starts)."""
+    if not soc_investigator.incidents:
+        try:
+            await soc_investigator.load_preset_scenario("scenario-cobalt-strike")
+            await soc_investigator.load_preset_scenario("scenario-lockbit-ransomware")
+            await soc_investigator.load_preset_scenario("scenario-false-positive-sccm")
+            logger.info(f"Loaded {len(soc_investigator.incidents)} baseline attack scenarios on-demand.")
+        except Exception as e:
+            logger.error(f"Error seeding initial scenarios: {e}")
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for Vercel uptime monitoring."""
+    return {
+        "status": "healthy",
+        "platform": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "environment": "vercel" if os.getenv("VERCEL") else "standalone",
+        "cached_incidents": len(soc_investigator.incidents)
+    }
 
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     index_file = os.path.join(static_dir, "index.html")
+    if not os.path.exists(index_file):
+        public_index = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "index.html")
+        if os.path.exists(public_index):
+            return FileResponse(public_index)
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {"message": "SentinelAI SOC Platform API is active. UI file not found."}
@@ -89,11 +120,13 @@ async def ingest_and_investigate(raw_payload: Dict[str, Any] = Body(...)):
 @app.get("/api/incidents", response_model=List[InvestigationReport])
 async def list_incidents():
     """Returns all triaged and investigated incidents."""
+    await ensure_seeded()
     return soc_investigator.list_incidents()
 
 @app.get("/api/incidents/{incident_id}", response_model=InvestigationReport)
 async def get_incident(incident_id: str):
     """Retrieves deep-dive investigation report for a specific incident."""
+    await ensure_seeded()
     inc = soc_investigator.get_incident(incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -102,6 +135,7 @@ async def get_incident(incident_id: str):
 @app.patch("/api/incidents/{incident_id}/status")
 async def update_incident_status(incident_id: str, status: IncidentStatus = Body(..., embed=True)):
     """Updates the status of an incident (TRIAGED, INVESTIGATING, CONTAINED, RESOLVED)."""
+    await ensure_seeded()
     inc = soc_investigator.get_incident(incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -111,6 +145,7 @@ async def update_incident_status(incident_id: str, status: IncidentStatus = Body
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_with_copilot(req: ChatRequest):
     """Conversational SOC Analyst Copilot grounded in active incident context."""
+    await ensure_seeded()
     inc = soc_investigator.get_incident(req.incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -124,6 +159,7 @@ async def chat_with_copilot(req: ChatRequest):
 @app.get("/api/stats")
 async def get_soc_metrics():
     """Aggregates SOC performance metrics, MTTR reduction, and MITRE distributions."""
+    await ensure_seeded()
     incidents = soc_investigator.list_incidents()
     total = len(incidents)
     critical_count = sum(1 for i in incidents if i.severity.value == "CRITICAL")
@@ -151,6 +187,7 @@ async def get_soc_metrics():
 @app.get("/api/incidents/{incident_id}/export/markdown", response_class=PlainTextResponse)
 async def export_markdown_report(incident_id: str):
     """Exports a professional incident audit report in Markdown format."""
+    await ensure_seeded()
     inc = soc_investigator.get_incident(incident_id)
     if not inc:
         raise HTTPException(status_code=404, detail="Incident not found")

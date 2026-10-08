@@ -40,3 +40,6 @@ wheels/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel deployment artifacts
+.vercel/
