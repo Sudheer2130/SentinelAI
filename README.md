@@ -208,19 +208,5 @@ SentinelAI/
 └── README.md                    # Project documentation
 ```
 
----
-
-## 💼 Resume Bullet Points (Copy & Paste for Your Resume)
-
-Highlight this project on your resume under **Projects** or **Experience**:
-
-- **SentinelAI – Autonomous AI SOC Analyst & Threat Hunter** `[Python, FastAPI, Pydantic, VirusTotal API, AbuseIPDB, MITRE ATT&CK, Docker]`
-  - Engineered an end-to-end autonomous SOC incident triage copilot correlating Windows Sysmon (Events 1, 3, 8, 11) and Suricata NIDS telemetry, reducing Tier-1 alert fatigue by ~35%.
-  - Designed automated threat intelligence enrichment pipelines with AbuseIPDB and VirusTotal v3 APIs, featuring in-memory LRU caching to respect API quotas and rate limits.
-  - Implemented real-time behavioral mapping to MITRE ATT&CK Framework (v14) covering Execution, Defense Evasion, and Command & Control tactics.
-  - Integrated hybrid LLM reasoning architectures (Free Gemini API, Groq LLaMA-3, and local Ollama) to synthesize executive summaries, root cause analyses, and automated containment playbooks (PowerShell isolation, Sigma rules, and YARA signatures).
-
----
-
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
